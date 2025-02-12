@@ -1,0 +1,18 @@
+{
+  "name": "fractionai-bot",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Fraction AI Battle Bot with UI Dashboard",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+    "blessed": "^0.1.81",
+    "blessed-contrib": "^4.11.0",
+    "bip39": "^3.1.0",
+    "ethers": "^6.11.1",
+    "moment-timezone": "^0.5.45",
+    "node-fetch": "^3.3.2"
+  }
+}
