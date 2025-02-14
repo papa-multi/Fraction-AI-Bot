@@ -13,6 +13,8 @@
     "blessed": "^0.1.81",
     "blessed-contrib": "^4.11.0",
     "ethers": "^6.11.1",
+    "http-proxy-agent": "^7.0.2",
+    "https-proxy-agent": "^7.0.6",
     "moment-timezone": "^0.5.45",
     "node-fetch": "^3.3.2"
   }
