@@ -28,9 +28,20 @@ class WalletManager extends Client {
     this.currentAgentIndex = 0;
   }
 
+  async checkProxyIP() {
+    try {
+        await this.updateProxy();
+        const ip = await this.getCurrentIP();
+    } catch (error) {
+        console.error("❌ Failed to fetch proxy IP:", error.message);
+    }
+  }
+
   async initialize() {
     this.config = await loadConfig();
+    await this.checkProxyIP();
   }
+
 
   async connect() {
     try {
@@ -51,6 +62,8 @@ class WalletManager extends Client {
 
       this.address = this.wallet.address;
       await Tools.delay(1000, `Connected to ${this.address.slice(0, 6)}...${this.address.slice(-4)}`);
+
+      await this.checkProxyIP();
     } catch (error) {
       throw error;
     }

@@ -1,12 +1,122 @@
-import fetch from "node-fetch";
+import axios from "axios";
+import fs from "fs";
+import { HttpsProxyAgent } from "https-proxy-agent";
+import { HttpProxyAgent } from "http-proxy-agent";
 import Tools from "../utils/tools.js";
+import Display from "../utils/display.js";
 
 class Client {
   constructor() {
     this.baseUrl = "https://dapp-backend-4x.fractionai.xyz/api3";
     this.userAgent = Tools.getRandomUA();
+
+    this.proxies = this.loadProxies();
+    this.proxyIndex = 0;
+    // Initialize axiosInstance with a proxy
+    this.axiosInstance = this.createAxiosInstance(this.currentProxy);
+
+    this.maxRetries = 5; // 🔥 Maximum retry attempts before stopping
+    this.retryDelay = 5000; // 🔥 Wait 5 seconds before retrying
+
+    this.updateProxy();
   }
 
+  // 📌 Load proxy list from proxies.txt
+  loadProxies() {
+    try {
+      const proxies = fs.readFileSync("proxies.txt", "utf8")
+        .split("\n")
+        .map((line) => line.trim())
+        .filter((line) => line.startsWith("http"));
+
+      if (proxies.length === 0) {
+        console.log("❌ No valid proxies found! Exiting...");
+        process.exit(1);
+      }
+
+      return proxies;
+    } catch (error) {
+      console.error("❌ Error reading proxies.txt:", error.message);
+      process.exit(1);
+    }
+  }
+
+  // 📌 Get the next proxy from the list (rotating)
+  getNextProxy() {
+    if (!this.proxies.length) {
+      console.log("⚠️ Proxy list is empty!");
+      return null;
+    }
+
+    const proxy = this.proxies[this.proxyIndex];
+    this.proxyIndex = (this.proxyIndex + 1) % this.proxies.length;
+    return proxy;
+  }
+
+  // 📌 Create axios instance with proxy support
+  createAxiosInstance(proxyUrl) {
+    if (!proxyUrl) return axios.create({ timeout: 30000 });
+
+    const isHttp = proxyUrl.startsWith("http://");
+    const agent = isHttp ? new HttpProxyAgent(proxyUrl) : new HttpsProxyAgent(proxyUrl);
+
+    return axios.create({
+      headers: { "Content-Type": "application/json" },
+      timeout: 30000,
+      proxy: false,
+      httpAgent: isHttp ? agent : undefined,
+      httpsAgent: !isHttp ? agent : undefined,
+    });
+  }
+
+  // 📌 Update to the next proxy
+  async updateProxy() {
+    this.currentProxy = this.getNextProxy();
+    this.axiosInstance = this.createAxiosInstance(this.currentProxy);
+  }
+
+  // 📌 Retrieve the current proxy's IP address
+  async getCurrentIP() {
+    try {
+      const response = await this.axiosInstance.get("http://api64.ipify.org?format=json");
+      Display.log(`Using Proxy: ${response.data?.ip || "Unknown"}`);
+      return response.data?.ip || "Unknown";
+    } catch (error) {
+      console.log("⚠️ Failed to fetch proxy IP:", error.message);
+      return "Unknown";
+    }
+  }
+
+  // 📌 Fetch API request with proxy rotation and retry mechanism
+  async fetch(endpoint, method = "GET", token, body = {}, attempt = 0) {
+    try {
+      if (attempt >= this.maxRetries) {
+        return { status: 429, data: null };
+      }
+
+      const url = this.baseUrl + endpoint;
+      const headers = await this.createHeaders(token);
+
+      const response = await this.axiosInstance({
+        method,
+        url,
+        headers,
+        data: method !== "GET" ? body : undefined,
+      });
+
+      return { status: response.status, data: response.data };
+    } catch (error) {
+      this.updateProxy(); // ✅ Always switch to a new proxy before retrying
+
+      if (error.response?.status === 429) {
+        await new Promise((resolve) => setTimeout(resolve, this.retryDelay)); // 🔥 Wait before retrying
+      }
+
+      return this.fetch(endpoint, method, token, body, attempt + 1);
+    }
+  }
+
+  // 📌 Create request headers
   async createHeaders(token) {
     const headers = {
       "Accept": "application/json, text/plain, */*",
@@ -14,99 +124,19 @@ class Client {
       "Content-Type": "application/json",
       "Allowed-State": "na",
     };
-
     if (token) headers.Authorization = `Bearer ${token}`;
     return headers;
   }
 
-  formatErrorMessage(error) {
-    if (
-      typeof error === "string" &&
-      error.includes("maximum number of sessions")
-    ) {
-      const matches = error.match(/(\d+)\s+for the hour/);
-      if (matches) {
-        return `Session limit reached: ${matches[1]} sessions per hour`;
-      }
-    }
-
-    if (typeof error === "object") {
-      return error.message || JSON.stringify(error);
-    }
-
-    return error;
-  }
-
-  async fetch(endpoint, method = "GET", token, body = {}) {
-    try {
-      const url = this.baseUrl + endpoint;
-      const headers = await this.createHeaders(token);
-      const options = {
-        method,
-        headers,
-        body: method !== "GET" ? JSON.stringify(body) : undefined,
-      };
-
-      const response = await fetch(url, options);
-      const contentType = response.headers.get("Content-Type");
-      let data;
-
-      if (contentType?.includes("application/json")) {
-        data = await response.json();
-      } else {
-        data = { message: await response.text() };
-      }
-
-      if (response.status === 429) {
-        const waitTime = 60 * 1000;
-        Tools.log("Rate limit hit (429). Waiting 1 minute before retry...");
-        await Tools.delay(waitTime, "Waiting for rate limit cooldown...");
-        return this.fetch(endpoint, method, token, body);
-      }
-
-      if (!response.ok) {
-        if (data.error) {
-          const errorMessage = this.formatErrorMessage(data.error);
-          Tools.log(`Error: ${errorMessage}`);
-        }
-      }
-
-      return {
-        status: response.ok ? 200 : response.status,
-        data,
-      };
-    } catch (error) {
-      if (error.status) {
-        const errorData = await this.handleErrorResponse(error);
-        if ([400, 403, 409, 429].includes(error.status)) {
-          return { status: error.status, data: errorData };
-        }
-        throw new Error(
-          `${error.status} - ${error.message || error.statusText}`
-        );
-      }
-      throw error;
-    }
-  }
-
+  // 📌 Retrieve a nonce from the API
   async getNonce() {
     try {
-      const response = await this.fetch("/auth/nonce");
-      if (!response.data || !response.data.nonce) {
-        throw new Error("Invalid nonce response");
-      }
+      const response = await this.axiosInstance("/auth/nonce");
+      if (!response.data?.nonce) throw new Error("Invalid nonce response");
       return response.data.nonce;
     } catch (error) {
       throw new Error(`Failed to get nonce: ${error.message}`);
     }
-  }
-
-  async handleErrorResponse(error) {
-    const contentType = error.headers.get("Content-Type");
-    if (contentType?.includes("application/json")) {
-      return await error.json();
-    }
-    return { message: await error.text() };
   }
 }
 
