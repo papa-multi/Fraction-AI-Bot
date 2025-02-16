@@ -49,50 +49,100 @@ Before installing **FractionAI-BOT**, make sure you have:
 
 ## 📥 Installation Guide
 
-### 📌 Option 1: Clone the Repository (Recommended)
+### 🐧 Linux/macOS Users
 
-#### ✅ For Linux/macOS/Windows:
+#### 📌 Step 1: Clone the Repository
 
 ```bash
 git clone https://github.com/rpchubs/Fraction-AI-Bot.git
 cd Fraction-AI-Bot
 ```
 
-### 📌 Option 2: Download as ZIP
-
-1. Go to the repository: [FractionAI-BOT GitHub](https://github.com/rpchubs/Fraction-AI-Bot)
-2. Click on the **`Code`** button → Select **`Download ZIP`**
-3. Extract the ZIP file
-4. Open a terminal or command prompt and navigate to the extracted folder:
-   ```bash
-   cd path/to/extracted-folder
-   ```
-
----
-
-### 📌 Step 3: Install Dependencies
-
-#### ✅ For Linux/macOS/Windows:
+#### 📌 Step 2: Install Dependencies
 
 ```bash
 npm install
 ```
 
----
-
-## 🔧 Configuration Guide
-
-### 📌 Step 4: Configure Wallets (Edit `data.txt`)
-
-#### ✅ Linux/macOS:
+#### 📌 Step 3: Configure Wallets (Edit `data.txt`)
 
 ```bash
 nano data.txt
 ```
 
-#### ✅ Windows:
+Enter your **private keys** (one per line):
 
-1. Open the `data.txt` file using Notepad or any text editor.
+```txt
+your_private_key
+```
+
+⚠️ **Only use test wallets! Never use your main wallet.**
+
+#### 📌 Step 4: Adjust Configuration (`config.json`)
+
+```bash
+nano config.json
+```
+
+Modify settings as needed:
+
+```json
+{
+  "fee": 0.01,
+  "useProxy": false
+}
+```
+
+💰 **Supported Entry Fees:** `0.01`, `0.001`, `0.0001` ETH.
+
+🌐 **Proxy Configuration:**
+- If you want to use a proxy, set `"useProxy": true` in `config.json`.
+- If you do not want to use a proxy, keep `"useProxy": false`.
+
+#### 📌 Step 5: Create a Screen Session (For Continuous Running)
+
+```bash
+screen -S fractionai-bot
+```
+
+#### 📌 Step 6: Start the Bot
+
+```bash
+npm start
+```
+
+---
+
+### 🖥️ Windows Users
+
+#### 📌 Step 1: Clone the Repository or Download as ZIP
+
+- **Option 1 (Recommended):**
+
+```powershell
+git clone https://github.com/rpchubs/Fraction-AI-Bot.git
+cd Fraction-AI-Bot
+```
+
+- **Option 2 (Download ZIP):**
+  1. Go to the repository: [FractionAI-BOT GitHub](https://github.com/rpchubs/Fraction-AI-Bot)
+  2. Click on the **`Code`** button → Select **`Download ZIP`**
+  3. Extract the ZIP file
+  4. Open a terminal and navigate to the extracted folder:
+
+```powershell
+cd path\to\extracted-folder
+```
+
+#### 📌 Step 2: Install Dependencies
+
+```powershell
+npm install
+```
+
+#### 📌 Step 3: Configure Wallets (Edit `data.txt`)
+
+1. Open `data.txt` using Notepad or any text editor.
 2. Enter your **private keys** (one per line):
 
 ```txt
@@ -101,49 +151,25 @@ your_private_key
 
 ⚠️ **Only use test wallets! Never use your main wallet.**
 
----
+#### 📌 Step 4: Adjust Configuration (`config.json`)
 
-### 📌 Step 5: Adjust Configuration (`config.json`)
-
-#### ✅ Linux/macOS:
-
-```bash
-nano config.json
-```
-
-#### ✅ Windows:
-
-1. Open the `config.json` file using Notepad or any text editor.
-
-Modify the entry fee and other settings:
+1. Open `config.json` using Notepad or any text editor.
+2. Modify settings as needed:
 
 ```json
 {
-  "fee": 0.01
+  "fee": 0.01,
+  "useProxy": false
 }
 ```
 
 💰 **Supported Entry Fees:** `0.01`, `0.001`, `0.0001` ETH.
 
----
+🌐 **Proxy Configuration:**
+- If you want to use a proxy, set `"useProxy": true` in `config.json`.
+- If you do not want to use a proxy, keep `"useProxy": false`.
 
-## 🎯 How to Use
-
-### 📌 Step 6: Create a Screen Session (For Linux/macOS Users)
-
-```bash
-screen -S fractionai-bot
-```
-
-### ▶️ Start the Bot
-
-#### ✅ For Linux/macOS:
-
-```bash
-npm start
-```
-
-#### ✅ For Windows (Command Prompt/PowerShell):
+#### 📌 Step 5: Start the Bot
 
 ```powershell
 npm start
@@ -169,7 +195,7 @@ npm start
 
 ## 🔗 Useful Resources
 
-📂 **GitHub Repository**: [RPC-Foundation](https://github.com/RPC-Foundation)\
+📂 **GitHub Repository**: [RPC Hubs](https://github.com/rpchubs)\
 💬 **Community Support**: [Telegram](https://t.me/RPC_Hubs)\
 📜 **License**: MIT License
 

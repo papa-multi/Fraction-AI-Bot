@@ -9,31 +9,47 @@ class Client {
   constructor() {
     this.baseUrl = "https://dapp-backend-4x.fractionai.xyz/api3";
     this.userAgent = Tools.getRandomUA();
+    
+    // 🔹 Load config from config.json
+    this.config = this.loadConfig();
+    this.useProxy = this.config.useProxy ?? false; // Default to true if not specified
 
-    this.proxies = this.loadProxies();
+    this.proxies = this.useProxy ? this.loadProxies() : [];
     this.proxyIndex = 0;
-    // Initialize axiosInstance with a proxy
+    
+    // 🔹 Only use proxy if enabled in config
+    this.currentProxy = this.useProxy ? this.getNextProxy() : null;
     this.axiosInstance = this.createAxiosInstance(this.currentProxy);
 
-    this.maxRetries = 5; // 🔥 Maximum retry attempts before stopping
-    this.retryDelay = 5000; // 🔥 Wait 5 seconds before retrying
-
-    this.updateProxy();
+    this.maxRetries = 5;
+    this.retryDelay = 5000;
   }
 
-  // 📌 Load proxy list from proxies.txt
+  // 📌 Load config from config.json
+  loadConfig() {
+    try {
+      const configData = fs.readFileSync("config.json", "utf8");
+      return JSON.parse(configData);
+    } catch (error) {
+      console.error("❌ Failed to read config.json:", error.message);
+      process.exit(1);
+    }
+  }
+
+  // 📌 Load proxies from proxies.txt (if enabled)
   loadProxies() {
+    if (!this.useProxy) return [];
+    
     try {
       const proxies = fs.readFileSync("proxies.txt", "utf8")
         .split("\n")
-        .map((line) => line.trim())
-        .filter((line) => line.startsWith("http"));
+        .map(line => line.trim())
+        .filter(line => line.startsWith("http"));
 
       if (proxies.length === 0) {
-        console.log("❌ No valid proxies found! Exiting...");
+        Display.log("❌ No valid proxies found! Exiting...");
         process.exit(1);
       }
-
       return proxies;
     } catch (error) {
       console.error("❌ Error reading proxies.txt:", error.message);
@@ -41,27 +57,29 @@ class Client {
     }
   }
 
-  // 📌 Get the next proxy from the list (rotating)
+  // 📌 Get next proxy (only if proxy is enabled)
   getNextProxy() {
-    if (!this.proxies.length) {
-      console.log("⚠️ Proxy list is empty!");
-      return null;
-    }
+    if (!this.useProxy || this.proxies.length === 0) return null;
 
     const proxy = this.proxies[this.proxyIndex];
     this.proxyIndex = (this.proxyIndex + 1) % this.proxies.length;
     return proxy;
   }
 
-  // 📌 Create axios instance with proxy support
+  // 📌 Create axios instance with or without proxy
   createAxiosInstance(proxyUrl) {
-    if (!proxyUrl) return axios.create({ timeout: 30000 });
+    if (!this.useProxy || !proxyUrl) {
+      return axios.create({
+        headers: { "User-Agent": this.userAgent },
+        timeout: 30000,
+      });
+    }
 
     const isHttp = proxyUrl.startsWith("http://");
     const agent = isHttp ? new HttpProxyAgent(proxyUrl) : new HttpsProxyAgent(proxyUrl);
 
     return axios.create({
-      headers: { "Content-Type": "application/json" },
+      headers: { "User-Agent": this.userAgent, "Content-Type": "application/json" },
       timeout: 30000,
       proxy: false,
       httpAgent: isHttp ? agent : undefined,
@@ -69,25 +87,32 @@ class Client {
     });
   }
 
-  // 📌 Update to the next proxy
+  // 📌 Update to the next proxy (only if enabled)
   async updateProxy() {
+    if (!this.useProxy) return;
+    
     this.currentProxy = this.getNextProxy();
     this.axiosInstance = this.createAxiosInstance(this.currentProxy);
   }
 
   // 📌 Retrieve the current proxy's IP address
   async getCurrentIP() {
+    if (!this.useProxy) {
+      // Display.log("🔹 Proxy is disabled, using direct connection.");
+      return "Direct Connection";
+    }
+
     try {
       const response = await this.axiosInstance.get("http://api64.ipify.org?format=json");
       Display.log(`Using Proxy: ${response.data?.ip || "Unknown"}`);
       return response.data?.ip || "Unknown";
     } catch (error) {
-      console.log("⚠️ Failed to fetch proxy IP:", error.message);
+      Display.log("⚠️ Failed to fetch proxy IP:", error.message);
       return "Unknown";
     }
   }
 
-  // 📌 Fetch API request with proxy rotation and retry mechanism
+  // 📌 Fetch API request with retry & proxy handling
   async fetch(endpoint, method = "GET", token, body = {}, attempt = 0) {
     try {
       if (attempt >= this.maxRetries) {
@@ -106,10 +131,10 @@ class Client {
 
       return { status: response.status, data: response.data };
     } catch (error) {
-      this.updateProxy(); // ✅ Always switch to a new proxy before retrying
+      if (this.useProxy) this.updateProxy(); // ✅ Rotate proxy before retrying
 
       if (error.response?.status === 429) {
-        await new Promise((resolve) => setTimeout(resolve, this.retryDelay)); // 🔥 Wait before retrying
+        await new Promise(resolve => setTimeout(resolve, this.retryDelay)); // 🔥 Wait before retrying
       }
 
       return this.fetch(endpoint, method, token, body, attempt + 1);

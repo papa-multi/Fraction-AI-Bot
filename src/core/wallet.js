@@ -33,7 +33,7 @@ class WalletManager extends Client {
         await this.updateProxy();
         const ip = await this.getCurrentIP();
     } catch (error) {
-        console.error("❌ Failed to fetch proxy IP:", error.message);
+        Display.log("❌ Failed to fetch proxy IP:", error.message);
     }
   }
 
@@ -50,15 +50,9 @@ class WalletManager extends Client {
       }
 
       await Tools.delay(1000, "Connecting to wallet...");
-      const accountType = Tools.checkKeyType(this.privateKey);
-
-      if (accountType === "phrase") {
-        this.wallet = ethers.Wallet.fromPhrase(this.privateKey, this.provider);
-      } else if (accountType === "private") {
-        this.wallet = new ethers.Wallet(this.privateKey.trim(), this.provider);
-      } else {
-        throw new Error("Invalid private key or phrase");
-      }
+      
+      this.wallet = new ethers.Wallet(this.privateKey.trim(), this.provider);
+      
 
       this.address = this.wallet.address;
       await Tools.delay(1000, `Connected to ${this.address.slice(0, 6)}...${this.address.slice(-4)}`);
