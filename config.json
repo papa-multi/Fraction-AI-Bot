@@ -1,4 +1,7 @@
 {
-  "fee": 0.01,
-  "useProxy": false
+  "fee": 0.1,
+  "useProxy": false,
+  "antiCaptchaKey": "Your-API-antiCaptchaKey",
+  "retryDelay": 10000,
+  "maxRetries": 3
 }

@@ -14,6 +14,23 @@ async function loadKeys() {
   }
 }
 
+async function handleSessionLimit(lastSessionTime) {
+  const elapsedTime = Date.now() - lastSessionTime;
+  const cooldownTime = 60 * 60 * 1000;
+  const remainingTime = cooldownTime - elapsedTime;
+
+  if (remainingTime > 0) {
+    const remainingMinutes = Math.ceil(remainingTime / 60000);
+    Tools.log(`Session limit cooldown: ${remainingMinutes} minutes remaining`);
+    await Tools.delay(
+      remainingTime,
+      `Waiting for session cooldown to expire...`
+    );
+    return true;
+  }
+  return false;
+}
+
 async function runWallet(key, lastAgentIndex = 0) {
   const wallet = new WalletManager(key);
   let sessionCount = 0;
@@ -22,6 +39,14 @@ async function runWallet(key, lastAgentIndex = 0) {
   const activeAgents = new Set();
 
   try {
+    if (lastSessionTime && sessionCount >= 6) {
+      await handleSessionLimit(lastSessionTime);
+      sessionCount = 0;
+      activeAgents.clear();
+      lastSessionTime = null;
+      return await runWallet(key, currentAgentIndex);
+    }
+
     await wallet.connect();
     await wallet.getBalance();
     await wallet.login();
@@ -46,28 +71,6 @@ async function runWallet(key, lastAgentIndex = 0) {
       sessionCount = 0;
       activeAgents.clear();
       lastSessionTime = null;
-    }
-
-    if (sessionCount >= 6) {
-      const elapsedTime = Date.now() - lastSessionTime;
-      const cooldownTime = 60 * 60 * 1000;
-      const remainingTime = cooldownTime - elapsedTime;
-
-      if (remainingTime > 0) {
-        const remainingMinutes = Math.ceil(remainingTime / 60000);
-        Tools.log(
-          `Session limit cooldown: ${remainingMinutes} minutes remaining`
-        );
-        await Tools.delay(
-          remainingTime,
-          `Waiting for session cooldown to expire...`
-        );
-
-        sessionCount = 0;
-        activeAgents.clear();
-        lastSessionTime = null;
-        return await runWallet(key, currentAgentIndex);
-      }
     }
 
     for (const agent of wallet.agents) {
@@ -106,7 +109,10 @@ async function runWallet(key, lastAgentIndex = 0) {
                 Tools.log(`Sessions used: ${sessionCount}/6`);
 
                 if (sessionCount >= 6) {
-                  Tools.log("Session limit reached, entering cooldown");
+                  Tools.log("Session limit reached, starting cooldown");
+                  await handleSessionLimit(lastSessionTime);
+                  sessionCount = 0;
+                  activeAgents.clear();
                   return await runWallet(key, currentAgentIndex);
                 }
 
@@ -114,8 +120,11 @@ async function runWallet(key, lastAgentIndex = 0) {
               }
             } catch (error) {
               if (error.message.includes("maximum number of sessions")) {
-                sessionCount = 6;
-                lastSessionTime = Date.now();
+                Tools.log("Session limit reached, starting cooldown");
+                lastSessionTime = lastSessionTime || Date.now();
+                await handleSessionLimit(lastSessionTime);
+                sessionCount = 0;
+                activeAgents.clear();
                 return await runWallet(key, currentAgentIndex);
               }
               continue;
@@ -140,9 +149,14 @@ async function runWallet(key, lastAgentIndex = 0) {
     return await runWallet(key, currentAgentIndex);
   } catch (error) {
     const message = error.message || JSON.stringify(error);
+
     if (message.includes("maximum number of sessions")) {
-      sessionCount = 6;
+      Tools.log("Session limit reached, starting cooldown");
       lastSessionTime = lastSessionTime || Date.now();
+      await handleSessionLimit(lastSessionTime);
+      sessionCount = 0;
+      activeAgents.clear();
+      return await runWallet(key, currentAgentIndex);
     }
 
     await Tools.delay(10000, `Error: ${message}. Retrying in 10s...`);
