@@ -15,24 +15,13 @@
 
 ## ✅ Pre-Run Checklist
 
-🔹 **Register at ************[Fraction AI](https://dapp.fractionai.xyz/?referral=75DFCD04)************.**\
+🔹 **Register at ************[Fraction AI](https://dapp.fractionai.xyz?referral=C9590E72)************.**\
 🔹 **Create your agent.**\
 🔹 **Ensure you have enough Sepolia ETH.**\
 🔹 **Customize settings in ************`config.json`************.**
 
 ---
 
-## 📂 Project Structure
-
-```
-Fraction-AI-Bot/
-├── config.json      # Configuration file
-├── data.txt         # Stores private keys (for test wallets only)
-├── src/             # Source code of the bot
-├── logs/            # Log files
-├── package.json     # Node.js dependencies
-└── README.md       # Documentation
-```
 
 ---
 
@@ -193,12 +182,14 @@ npm start
 
 ---
 
-## 🔗 Useful Resources
 
-📂 **GitHub Repository**: [RPC Hubs](https://github.com/rpchubs)\
-💬 **Community Support**: [Telegram](https://t.me/RPC_Hubs)\
-📜 **License**: MIT License
 
+
+# check point 
+
+```
+node fetch-fractal.js
+```
 ---
 
 💡 **Need Help?** Join our Telegram group for real-time support and discussions! 🚀
