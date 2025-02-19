@@ -100,79 +100,9 @@ screen -S fractionai-bot
 npm start
 ```
 
----
 
-### 🖥️ Windows Users
 
-#### 📌 Step 1: Clone the Repository or Download as ZIP
 
-- **Option 1 (Recommended):**
-
-```powershell
-git clone https://github.com/rpchubs/Fraction-AI-Bot.git
-cd Fraction-AI-Bot
-```
-
-- **Option 2 (Download ZIP):**
-  1. Go to the repository: [FractionAI-BOT GitHub](https://github.com/rpchubs/Fraction-AI-Bot)
-  2. Click on the **`Code`** button → Select **`Download ZIP`**
-  3. Extract the ZIP file
-  4. Open a terminal and navigate to the extracted folder:
-
-```powershell
-cd path\to\extracted-folder
-```
-
-#### 📌 Step 2: Install Dependencies
-
-```powershell
-npm install
-```
-
-#### 📌 Step 3: Configure Wallets (Edit `data.txt`)
-
-1. Open `data.txt` using Notepad or any text editor.
-2. Enter your **private keys** (one per line):
-
-```txt
-your_private_key
-```
-
-⚠️ **Only use test wallets! Never use your main wallet.**
-
-#### 📌 Step 4: Adjust Configuration (`config.json`)
-
-1. Open `config.json` using Notepad or any text editor.
-2. Modify settings as needed:
-
-```json
-{
-  "fee": 0.01,
-  "useProxy": false
-}
-```
-
-💰 **Supported Entry Fees:** `0.01`, `0.001`, `0.0001` ETH.
-
-🌐 **Proxy Configuration:**
-- If you want to use a proxy, set `"useProxy": true` in `config.json`.
-- If you do not want to use a proxy, keep `"useProxy": false`.
-
-#### 📌 Step 5: Start the Bot
-
-```powershell
-npm start
-```
-
----
-
-## 🎮 Bot Controls
-
-🛑 Press **`Q`** → Quit the bot.\
-🔄 Press **`R`** → Refresh the dashboard.\
-🧹 Press **`C`** → Clear the logs.
-
----
 
 ## ⚠️ Important Warnings
 
